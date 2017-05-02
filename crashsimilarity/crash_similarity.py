@@ -12,8 +12,8 @@ import numpy as np
 import pyximport
 from pyemd import emd
 
-from crashsimilarity import utils
-from crashsimilarity.downloader import SocorroDownloader
+import utils
+from downloader import SocorroDownloader
 
 pyximport.install()
 
@@ -151,7 +151,7 @@ def wmdistance(model, words1, words2, all_distances):
     docset = set(words2)
     distances = create_distance_matrix(model, dictionary, docset, all_distances)
 
-    assert sum(distances) != 0
+    # assert sum(distances) != 0
 
     return emd(bow1, bow2, distances)
 
@@ -171,8 +171,14 @@ def top_similar_traces(model, corpus, stack_trace, top=10):
     '''
 
     # Cos-similarity
-    all_distances = np.array(1.0 - np.dot(model.wv.syn0norm, model.wv.syn0norm[[model.wv.vocab[word].index for word in words_to_test_clean]].transpose()), dtype=np.double)
+    x = [model.wv.vocab[word].index for word in words_to_test_clean]
+    print x
+    print type(model.wv.syn0norm)
+    print model.wv.syn0norm.shape
+    print model.wv.syn0norm[x].transpose().shape
+    all_distances = np.array(1.0 - np.dot(model.wv.syn0norm, model.wv.syn0norm[x].transpose()), dtype=np.double)
 
+    print all_distances.shape
     # Relaxed Word Mover's Distance for selecting
     t = time.time()
     distances = []
@@ -243,14 +249,15 @@ def signature_similarity(model, paths, signature1, signature2):
 if __name__ == '__main__':
     # download_data.download_crashes(days=7, product='Firefox')
     # paths = download_data.get_paths(days=7, product='Firefox')
-    paths = ['../crashsimilarity_data/firefox-crashes-2016-11-09.json.gz',
-             '../crashsimilarity_data/firefox-crashes-2016-11-08.json.gz',
-             '../crashsimilarity_data/firefox-crashes-2016-11-07.json.gz',
-             '../crashsimilarity_data/firefox-crashes-2016-11-06.json.gz',
-             '../crashsimilarity_data/firefox-crashes-2016-11-05.json.gz',
-             '../crashsimilarity_data/firefox-crashes-2016-11-04.json.gz',
-             '../crashsimilarity_data/firefox-crashes-2016-11-03.json.gz']
+    paths = ['../crashsimilarity_data/firefox-crashes-2016-11-09.json.gz']
+#              '../crashsimilarity_data/firefox-crashes-2016-11-08.json.gz',
+#              '../crashsimilarity_data/firefox-crashes-2016-11-07.json.gz',
+#              '../crashsimilarity_data/firefox-crashes-2016-11-06.json.gz',
+#              '../crashsimilarity_data/firefox-crashes-2016-11-05.json.gz',
+#              '../crashsimilarity_data/firefox-crashes-2016-11-04.json.gz',
+#              '../crashsimilarity_data/firefox-crashes-2016-11-03.json.gz']
     corpus = read_corpus(paths)
     model = train_model(corpus)
+    similarities = top_similar_traces(model, corpus, ' | '.join([u'dispatchtotracer<t>', u'jsscript::tracechildren', u'js::gcmarker::processmarkstacktop', u'js::gcmarker::drainmarkstack', u'js::gc::gcruntime::drainmarkstack', u'js::gc::gcruntime::gccycle', u'js::gc::gcruntime::collect', u'js::gc::gcruntime::gcslice', u'nsxpconnect::notifydidpaint', u'mozilla::refreshdrivertimer::tickrefreshdrivers', u'mozilla::basetimeduration<t>::frommilliseconds', u'mozilla::refreshdrivertimer::tick', u'mozilla::basetimeduration<t>::frommilliseconds', u'mozilla::vsyncrefreshdrivertimer::runrefreshdrivers', u'mozilla::basetimeduration<t>::frommilliseconds', u'mozilla::telemetry::accumulate', u'mozilla::basetimeduration<t>::frommilliseconds', u'nsrunnablemethodimpl<t>::run', u'mozilla::basetimeduration<t>::frommilliseconds', u'mozilla::ipc::messagepump::run', u'messageloop::runhandler', u'nsthreadmanager::getcurrentthread', u'nsbaseappshell::run', u'nsappstartup::run', u'xremain::xre_mainrun', u'xremain::xre_main', u'xre_main', u'_cisqrt']), 20)
 
     print(dict([(model.wv.index2word[i], similarity) for i, similarity in enumerate(model.wv.similar_by_word('igdumd32.dll@0x', topn=False))])['igdumd64.dll@0x'])

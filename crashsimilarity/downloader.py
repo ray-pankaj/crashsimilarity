@@ -6,7 +6,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3 import Retry
 
-from crashsimilarity import utils
+import utils
 
 
 class Downloader(object):
